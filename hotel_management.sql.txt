@@ -1,0 +1,152 @@
+hotel_management.sql
+USE hotelkey;
+SHOW TABLES;
+DROP TABLE IF EXISTS guests;
+
+CREATE TABLE guests (
+                        guest_id VARCHAR(36) PRIMARY KEY,
+                        guest_name VARCHAR(100) NOT NULL,
+                        guest_lastname VARCHAR(100) NOT NULL,
+                        guest_email VARCHAR(150) NOT NULL
+);
+SHOW TABLES;
+CREATE TABLE Guests (
+                        guest_id VARCHAR(36) PRIMARY KEY,
+                        guest_name VARCHAR(50) NOT NULL,
+                        guest_lastname VARCHAR(50) NOT NULL,
+                        guest_email VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE Rooms (
+                       room_id INT PRIMARY KEY AUTO_INCREMENT,
+                       room_number VARCHAR(10) NOT NULL UNIQUE,
+                       room_type VARCHAR(50) NOT NULL,
+                       room_price DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE Bookings (
+                          booking_id VARCHAR(36) PRIMARY KEY,
+                          guest_id VARCHAR(36),
+                          room_id INT,
+                          check_in DATE NOT NULL,
+                          check_out DATE NOT NULL,
+                          total_cost DECIMAL(10,2),
+                          FOREIGN KEY (guest_id) REFERENCES Guests(guest_id),
+                          FOREIGN KEY (room_id) REFERENCES Rooms(room_id)
+);
+
+CREATE TABLE HotelServices (
+                               service_id INT PRIMARY KEY AUTO_INCREMENT,
+                               service_name VARCHAR(50) NOT NULL,
+                               service_description TEXT,
+                               base_price DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE BookingServices (
+                                 booking_id VARCHAR(36),
+                                 service_id INT,
+                                 PRIMARY KEY (booking_id, service_id),
+                                 FOREIGN KEY (booking_id) REFERENCES Bookings(booking_id),
+                                 FOREIGN KEY (service_id) REFERENCES HotelServices(service_id)
+);
+
+CREATE TABLE Staff (
+                       staff_id INT PRIMARY KEY AUTO_INCREMENT,
+                       staff_name VARCHAR(50) NOT NULL,
+                       staff_lastname VARCHAR(50) NOT NULL,
+                       role VARCHAR(50) NOT NULL,
+                       department VARCHAR(50) NOT NULL
+);
+
+
+INSERT INTO Guests VALUES
+                       ('G1', 'John', 'Doe', 'john.doe@example.com'),
+                       ('G2', 'Jane', 'Smith', 'jane.smith@example.com'),
+                       ('G3', 'Alice', 'Johnson', 'alice.johnson@example.com'),
+                       ('G4', 'Bob', 'Brown', 'bob.brown@example.com'),
+                       ('G5', 'Emily', 'Davis', 'emily.davis@example.com');
+
+INSERT INTO Rooms (room_number, room_type, room_price) VALUES
+                                                           ('101', 'Standard', 80.00),
+                                                           ('102', 'Deluxe', 150.00),
+                                                           ('103', 'Suite', 220.00),
+                                                           ('104', 'Standard', 85.00),
+                                                           ('105', 'Deluxe', 160.00);
+
+INSERT INTO Bookings VALUES
+                         ('B1', 'G1', 101, '2025-08-01', '2025-08-05', 320.00),
+                         ('B2', 'G2', 102, '2025-08-03', '2025-08-06', 450.00),
+                         ('B3', 'G1', 104, '2025-08-10', '2025-08-12', 170.00),
+                         ('B4', 'G3', 105, '2025-08-02', '2025-08-05', 480.00),
+                         ('B5', 'G4', 103, '2025-08-07', '2025-08-10', 660.00),
+                         ('B6', 'G2', 101, '2025-08-15', '2025-08-18', 240.00),
+                         ('B7', 'G5', 102, '2025-08-20', '2025-08-23', 450.00),
+                         ('B8', 'G3', 105, '2025-08-25', '2025-08-28', 480.00);
+
+INSERT INTO HotelServices (service_name, service_description, base_price) VALUES
+                                                                              ('Spa', 'Relaxing full-body massage', 75.00),
+                                                                              ('Room Service', '24/7 in-room dining', 30.00),
+                                                                              ('Laundry', 'Same-day laundry service', 20.00);
+
+INSERT INTO BookingServices VALUES
+                                ('B1', 1),
+                                ('B2', 2),
+                                ('B3', 3),
+                                ('B4', 1),
+                                ('B5', 2),
+                                ('B6', 3);
+
+INSERT INTO Staff (staff_name, staff_lastname, role, department) VALUES
+                                                                     ('Anna', 'White', 'Front Desk', 'Reception'),
+                                                                     ('James', 'Black', 'Housekeeper', 'Housekeeping'),
+                                                                     ('Sara', 'Green', 'Manager', 'Management'),
+                                                                     ('Tom', 'Blue', 'Concierge', 'Guest Services');
+
+
+SELECT guest_name, guest_lastname, guest_email FROM Guests;
+
+SELECT * FROM Rooms WHERE room_id NOT IN (
+    SELECT room_id FROM Bookings WHERE
+        ('2025-08-04' BETWEEN check_in AND check_out)
+);
+
+SELECT * FROM Rooms WHERE room_type = 'Deluxe';
+
+SELECT * FROM Rooms ORDER BY room_price DESC LIMIT 1;
+
+SELECT * FROM Rooms WHERE room_price > 100;
+
+SELECT b.booking_id, g.guest_name, g.guest_lastname, r.room_number, b.check_in, b.check_out
+FROM Bookings b
+         JOIN Guests g ON b.guest_id = g.guest_id
+         JOIN Rooms r ON b.room_id = r.room_id;
+
+SELECT * FROM Bookings
+WHERE guest_id = 'G2'
+ORDER BY check_in;
+
+SELECT g.guest_name, g.guest_lastname, COUNT(*) as booking_count
+FROM Bookings b
+         JOIN Guests g ON b.guest_id = g.guest_id
+GROUP BY b.guest_id
+HAVING COUNT(*) > 1;
+
+SELECT r.room_type, COUNT(*) AS times_booked
+FROM Bookings b
+         JOIN Rooms r ON b.room_id = r.room_id
+GROUP BY r.room_type;
+
+SELECT b.booking_id, b.total_cost FROM Bookings b;
+
+SELECT * FROM HotelServices;
+
+SELECT DISTINCT hs.service_name
+FROM BookingServices bs
+         JOIN HotelServices hs ON bs.service_id = hs.service_id;
+
+SELECT staff_name, staff_lastname, role, department FROM Staff;
+
+SELECT DISTINCT g.guest_name, g.guest_lastname
+FROM Guests g
+         JOIN Bookings b ON g.guest_id = b.guest_id
+WHERE b.total_cost > 400;
